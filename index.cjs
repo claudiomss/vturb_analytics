@@ -9,7 +9,8 @@ const CREDENTIALS_PATH = path.join(__dirname, "service.json")
 const BASE_URL = "https://www.descobre.app:443"
 
 // Agendado para rodar às 23:50 todos os dias
-cron.schedule("50 23 * * *", async () => {
+// cron.schedule("50 23 * * *", async () => {
+cron.schedule("* * * * *", async () => {
   try {
     const today = new Date()
     const dateStr = today.toISOString().split("T")[0] // yyyy-mm-dd
