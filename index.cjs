@@ -10,7 +10,7 @@ const BASE_URL = "https://www.descobre.app:443"
 
 // Agendado para rodar às 23:50 todos os dias
 // cron.schedule("50 23 * * *", async () => {
-cron.schedule("* * * * *", async () => {
+cron.schedule("50 23 * * *", async () => {
   try {
     const today = new Date()
     const dateStr = today.toISOString().split("T")[0] // yyyy-mm-dd
@@ -48,12 +48,14 @@ cron.schedule("* * * * *", async () => {
       })
 
       const analytics = await analyticsRes.json()
+
       const {
         views = 0,
         start = 0,
         checkout = 0,
         total_finished = 0,
         conversao = 0,
+        pitch_taxa = 0,
       } = analytics
 
       // Requisição /rates_early
@@ -76,13 +78,14 @@ cron.schedule("* * * * *", async () => {
         playerId,
         playerName,
         dateFormatted,
-        views,
-        start,
+        pitch_taxa,
         lead1min,
         lead2min,
+        start,
         total_finished,
-        checkout,
+        views,
         conversao,
+        checkout,
         oferta,
       ]
 
@@ -107,6 +110,7 @@ cron.schedule("* * * * *", async () => {
   }
 })
 
+ff()
 // Função auxiliar para converter HH:MM:SS em segundos
 function convertTimeToSeconds(hms) {
   const [h, m, s] = hms.split(":").map(Number)
