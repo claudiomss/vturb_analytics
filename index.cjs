@@ -10,7 +10,12 @@ const BASE_URL = "https://www.descobre.app:443"
 
 // Agendado para rodar às 23:50 todos os dias
 // cron.schedule("50 23 * * *", async () => {
-cron.schedule("0 * * * *", async () => {
+
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+async function getAnaly() {
   try {
     const today = new Date()
     const dateFormatted = today.toLocaleDateString("pt-BR") // dd/mm/yyyy
@@ -31,76 +36,85 @@ cron.schedule("0 * * * *", async () => {
 
     for (const video of listaData) {
       const { id_video: playerId, nome: playerName, pitch, oferta } = video
+
       const pitchTime = convertTimeToSeconds(pitch)
 
-      // Requisição /analytics
-      const analyticsRes = await fetch(`${BASE_URL}/analytics`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          start_date: `${dateStr} 00:00:01`,
-          end_date: `${dateStr} 23:59:59`,
-          player_id: playerId,
-          field: "country",
-          video_duration: 3343,
-          timezone: "America/Sao_Paulo",
-          pitch_time: pitchTime,
-        }),
-      })
+      try {
+        // Requisição /analytics
+        const analyticsRes = await fetch(`${BASE_URL}/analytics`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            start_date: `${dateStr} 00:00:01`,
+            end_date: `${dateStr} 23:59:59`,
+            player_id: playerId,
+            field: "country",
+            video_duration: 3600,
+            timezone: "America/Sao_Paulo",
+            pitch_time: pitchTime,
+          }),
+        })
 
-      const analytics = await analyticsRes.json()
+        const analytics = await analyticsRes.json()
 
-      const {
-        views = 0,
-        start = 0,
-        checkout = 0,
-        total_finished = 0,
-        conversao = 0,
-        pitch_taxa = 0,
-      } = analytics
+        const {
+          views,
+          start,
+          checkout,
+          total_finished,
+          conversao,
+          pitch_taxa,
+        } = analytics
 
-      // Requisição /rates_early
-      const earlyRes = await fetch(`${BASE_URL}/rates_early`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          start_date: dateStr,
-          end_date: dateStr,
-          player_id: playerId,
-        }),
-      })
+        // Requisição /rates_early
+        const earlyRes = await fetch(`${BASE_URL}/rates_early`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            start_date: dateStr,
+            end_date: dateStr,
+            player_id: playerId,
+          }),
+        })
 
-      const early = await earlyRes.json()
-      const lead1min = (100 - (early.lead_1min_rate || 0)).toFixed(2) + "%"
-      const lead2min = (100 - (early.lead_2min_rate || 0)).toFixed(2) + "%"
+        const early = await earlyRes.json()
 
-      // Enviar para Google Sheets
-      const row = [
-        playerId,
-        playerName,
-        dateFormatted,
-        pitch_taxa,
-        lead1min,
-        lead2min,
-        start,
-        total_finished,
-        views,
-        conversao,
-        checkout,
-        oferta,
-      ]
+        const lead1min = (100 - (early.lead_1min_rate || 0)).toFixed(2) + "%"
+        const lead2min = (100 - (early.lead_2min_rate || 0)).toFixed(2) + "%"
 
-      await sheets.spreadsheets.values.append({
-        spreadsheetId: SPREADSHEET_ID,
-        range: "A1",
-        valueInputOption: "USER_ENTERED",
-        insertDataOption: "INSERT_ROWS",
-        resource: {
-          values: [row],
-        },
-      })
+        // Enviar para Google Sheets
+        const row = [
+          playerId,
+          playerName,
+          dateFormatted,
+          pitch_taxa,
+          lead1min,
+          lead2min,
+          start,
+          total_finished,
+          views,
+          conversao,
+          checkout,
+          oferta,
+        ]
 
-      console.log(`✅ Enviado: ${playerName} (${playerId})`)
+        await sheets.spreadsheets.values.append({
+          spreadsheetId: SPREADSHEET_ID,
+          range: "A1",
+          valueInputOption: "USER_ENTERED",
+          insertDataOption: "INSERT_ROWS",
+          resource: {
+            values: [row],
+          },
+        })
+
+        console.log(`✅ Enviado: ${playerName} (${playerId})`)
+        await delay(2000)
+      } catch (error) {
+        console.log("Sem dados da VSL " + video.nome)
+
+        continue
+      }
     }
 
     console.log(
@@ -109,9 +123,11 @@ cron.schedule("0 * * * *", async () => {
   } catch (err) {
     console.error("❌ Erro geral:", err.message)
   }
+}
+cron.schedule("1 0 * * *", async () => {
+  getAnaly()
 })
 
-ff()
 // Função auxiliar para converter HH:MM:SS em segundos
 function convertTimeToSeconds(hms) {
   const [h, m, s] = hms.split(":").map(Number)
