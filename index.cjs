@@ -10,11 +10,12 @@ const BASE_URL = "https://www.descobre.app:443"
 
 // Agendado para rodar às 23:50 todos os dias
 // cron.schedule("50 23 * * *", async () => {
-cron.schedule("50 23 * * *", async () => {
+cron.schedule("0 * * * *", async () => {
   try {
     const today = new Date()
-    const dateStr = today.toISOString().split("T")[0] // yyyy-mm-dd
     const dateFormatted = today.toLocaleDateString("pt-BR") // dd/mm/yyyy
+    today.setDate(today.getDate() - 1)
+    const dateStr = today.toISOString().split("T")[0] // yyyy-mm-dd
 
     // Autenticação Google
     const auth = new google.auth.GoogleAuth({
