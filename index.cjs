@@ -19,6 +19,7 @@ async function getAnaly() {
   try {
     const today = new Date()
     const dateFormatted = today.toLocaleDateString("pt-BR") // dd/mm/yyyy
+    const dateSheets = new Date().toLocaleDateString("pt-BR") // dd/mm/yyyy
     today.setDate(today.getDate() - 1)
     const dateStr = today.toISOString().split("T")[0] // yyyy-mm-dd
 
@@ -86,7 +87,7 @@ async function getAnaly() {
         const row = [
           playerId,
           playerName,
-          dateFormatted,
+          dateSheets,
           pitch_taxa,
           lead1min,
           lead2min,
